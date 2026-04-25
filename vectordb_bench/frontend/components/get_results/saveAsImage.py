@@ -1,13 +1,13 @@
-import requests
+import pathlib
 import streamlit as st
 import streamlit.components.v1 as components
 
-HTML_2_CANVAS_URL = "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.js"
+_HTML2CANVAS_PATH = pathlib.Path(__file__).parent.parent.parent / "static" / "html2canvas.js"
 
 
 @st.cache_data
-def load_unpkg(src: str) -> str:
-    return requests.get(src).text
+def load_html2canvas() -> str:
+    return _HTML2CANVAS_PATH.read_text()
 
 
 def getResults(container, pageName="vectordb_bench"):
@@ -16,7 +16,7 @@ def getResults(container, pageName="vectordb_bench"):
 
 
 def saveAsImage(container, pageName):
-    html2canvasJS = load_unpkg(HTML_2_CANVAS_URL)
+    html2canvasJS = load_html2canvas()
     container.write()
     buttonText = "Save as Image"
     savePDFButton = container.button(buttonText)
