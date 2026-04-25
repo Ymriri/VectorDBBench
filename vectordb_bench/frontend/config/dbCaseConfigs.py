@@ -419,6 +419,8 @@ CaseConfigParamInput_IndexType = CaseConfigInput(
             IndexType.GPU_IVF_PQ.value,
             IndexType.GPU_CAGRA.value,
             IndexType.GPU_BRUTE_FORCE.value,
+            IndexType.SPANN.value,
+            IndexType.SPANN_RABITQ.value,
         ],
     },
 )
