@@ -71,3 +71,33 @@ def test_client_built_with_botocore_config():
         cfg = call_kwargs["config"]
         assert cfg.max_pool_connections == 50
         assert cfg.retries == {"mode": "adaptive", "max_attempts": 10}
+
+
+def test_insert_chunks_to_batch_size():
+    """250 records + insert_batch_size=100 → exactly 3 put_vectors calls
+    with sizes 100, 100, 50."""
+    from vectordb_bench.backend.clients.s3_vectors import s3_vectors as mod
+
+    db_config, case_config = _default_db_and_case()
+
+    with patch.object(mod, "boto3") as mock_boto3:
+        fake_client = MagicMock()
+        mock_boto3.client.return_value = fake_client
+
+        db = mod.S3Vectors(
+            dim=4,
+            db_config=db_config,
+            db_case_config=case_config,
+            drop_old=False,
+        )
+        with db.init():
+            count, err = db.insert_embeddings(
+                embeddings=[[0.1, 0.2, 0.3, 0.4]] * 250,
+                metadata=list(range(250)),
+            )
+
+        assert count == 250
+        assert err is None
+        assert fake_client.put_vectors.call_count == 3
+        sizes = [len(call.kwargs["vectors"]) for call in fake_client.put_vectors.call_args_list]
+        assert sizes == [100, 100, 50]
