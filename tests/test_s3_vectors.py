@@ -33,3 +33,41 @@ def test_config_to_dict_exposes_all_tuning_fields():
     assert d["max_pool_connections"] == 50
     assert d["retry_mode"] == "adaptive"
     assert d["retry_max_attempts"] == 10
+
+
+def _default_db_and_case():
+    """Build a default (db_config dict, S3VectorsIndexConfig) pair for tests
+    that need to construct an S3Vectors instance. Tests still must patch
+    boto3 themselves — this helper only assembles the config inputs."""
+    from vectordb_bench.backend.clients.api import MetricType
+    from vectordb_bench.backend.clients.s3_vectors.config import S3VectorsIndexConfig
+
+    db_config = _build_config().to_dict()
+    case_config = S3VectorsIndexConfig(metric_type=MetricType.COSINE)
+    return db_config, case_config
+
+
+def test_client_built_with_botocore_config():
+    """boto3.client must receive a botocore Config with our tuning values so
+    urllib3 pool size and adaptive retry actually take effect."""
+    from vectordb_bench.backend.clients.s3_vectors import s3_vectors as mod
+
+    db_config, case_config = _default_db_and_case()
+
+    with patch.object(mod, "boto3") as mock_boto3:
+        fake_client = MagicMock()
+        mock_boto3.client.return_value = fake_client
+
+        mod.S3Vectors(
+            dim=4,
+            db_config=db_config,
+            db_case_config=case_config,
+            drop_old=False,
+        )
+
+        assert mock_boto3.client.called
+        call_kwargs = mock_boto3.client.call_args.kwargs
+        assert "config" in call_kwargs, "boto3.client must be called with config="
+        cfg = call_kwargs["config"]
+        assert cfg.max_pool_connections == 50
+        assert cfg.retries == {"mode": "adaptive", "max_attempts": 10}
