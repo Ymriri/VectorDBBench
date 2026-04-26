@@ -37,6 +37,47 @@ class S3VectorsTypedDict(TypedDict):
         ),
     ]
 
+    insert_batch_size: Annotated[
+        int,
+        click.option(
+            "--insert-batch-size",
+            type=int,
+            help="PutVectors batch size; AWS hard limit 500 per call",
+            default=100,
+            show_default=True,
+        ),
+    ]
+    max_pool_connections: Annotated[
+        int,
+        click.option(
+            "--max-pool-connections",
+            type=int,
+            help="urllib3 connection pool size; should be >= 2x ConcurrentInsertRunner worker count",
+            default=50,
+            show_default=True,
+        ),
+    ]
+    retry_mode: Annotated[
+        str,
+        click.option(
+            "--retry-mode",
+            type=click.Choice(["legacy", "standard", "adaptive"]),
+            help="boto3 retry mode; adaptive recommended for throttling resilience",
+            default="adaptive",
+            show_default=True,
+        ),
+    ]
+    retry_max_attempts: Annotated[
+        int,
+        click.option(
+            "--retry-max-attempts",
+            type=int,
+            help="boto3 retry total attempt count (including the first call)",
+            default=10,
+            show_default=True,
+        ),
+    ]
+
 
 class S3VectorsIndexTypedDict(CommonTypedDict, S3VectorsTypedDict): ...
 
@@ -55,6 +96,10 @@ def S3Vectors(**parameters: Unpack[S3VectorsIndexTypedDict]):
             secret_access_key=SecretStr(parameters["secret_access_key"]),
             bucket_name=parameters["bucket"],
             index_name=parameters["index"] if parameters["index"] else "vdbbench-index",
+            insert_batch_size=parameters["insert_batch_size"],
+            max_pool_connections=parameters["max_pool_connections"],
+            retry_mode=parameters["retry_mode"],
+            retry_max_attempts=parameters["retry_max_attempts"],
         ),
         db_case_config=S3VectorsIndexConfig(
             metric_type=(
