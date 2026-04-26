@@ -279,3 +279,55 @@ Optional (per database): `qdrant-client`, `pinecone`, `weaviate-client`, `elasti
 | `backend/clients/__init__.py` | DB enum, client registry mappings |
 | `cli/cli.py` | CommonTypedDict, click parameter decorators |
 | `frontend/vdbbench.py` | Streamlit app entry |
+
+## CLI Quick Reference
+
+### AWS S3 Vectors
+
+S3 Vectors backend supports concurrent insert/search via boto3 with configurable tuning parameters.
+
+```bash
+# Minimum example — insert + search with default tuning
+vectordbbench s3vectors \
+  --access_key_id AKIA... \
+  --secret_access_key ... \
+  --bucket my-vector-bucket \
+  --region us-west-2 \
+  --index my-index \
+  --metric cosine
+
+# With tuning parameters (recommended for benchmark workloads)
+vectordbbench s3vectors \
+  --access_key_id AKIA... \
+  --secret_access_key ... \
+  --bucket my-vector-bucket \
+  --insert-batch-size 200 \
+  --max-pool-connections 50 \
+  --retry-mode adaptive \
+  --retry-max-attempts 10 \
+  --metric cosine
+```
+
+**Tuning notes:**
+- `--insert-batch-size`: AWS hard limit 500 vectors per PutVectors call. Default 100.
+- `--max-pool-connections`: urllib3 pool size; should be >= 2x ConcurrentInsertRunner worker count. Default 50.
+- `--retry-mode`: `adaptive` uses token-bucket backoff for ThrottlingException (recommended). Default `adaptive`.
+- `--retry-max-attempts`: Total attempts including first call. Default 10.
+
+### Milvus SPANN
+
+```bash
+# Minimum example
+vectordbbench MilvusSPANN \
+  --uri http://localhost:19530 \
+  --collection my_spann_collection
+```
+
+### Milvus SPANN_RABITQ
+
+```bash
+# Minimum example
+vectordbbench MilvusSPANNRaBitQ \
+  --uri http://localhost:19530 \
+  --collection my_spann_rabitq_collection
+```
