@@ -138,3 +138,67 @@ def test_insert_returns_partial_count_on_error():
 
         assert count == 100, "First batch (100 records) should have committed"
         assert returned_err is err, "The exact ClientError instance should be returned"
+
+
+def test_drop_old_skips_when_index_absent():
+    """list_indexes returns empty → __init__ must not call delete_index,
+    and must still call create_index. Guards against accidentally adding
+    an unconditional delete_index that 404s on a fresh bucket."""
+    from vectordb_bench.backend.clients.s3_vectors import s3_vectors as mod
+
+    db_config, case_config = _default_db_and_case()
+
+    with patch.object(mod, "boto3") as mock_boto3:
+        fake_client = MagicMock()
+        fake_client.list_indexes.return_value = {"indexes": []}
+        mock_boto3.client.return_value = fake_client
+
+        mod.S3Vectors(
+            dim=4,
+            db_config=db_config,
+            db_case_config=case_config,
+            drop_old=True,
+        )
+
+        fake_client.delete_index.assert_not_called()
+        fake_client.create_index.assert_called_once()
+
+
+def test_filter_translation():
+    """Verify each FilterOp branch in prepare_filter."""
+    from vectordb_bench.backend.clients.s3_vectors import s3_vectors as mod
+    from vectordb_bench.backend.filter import Filter, FilterOp
+
+    db_config, case_config = _default_db_and_case()
+
+    with patch.object(mod, "boto3") as mock_boto3:
+        mock_boto3.client.return_value = MagicMock()
+        db = mod.S3Vectors(
+            dim=4,
+            db_config=db_config,
+            db_case_config=case_config,
+            drop_old=False,
+        )
+
+        f_none = Filter(type=FilterOp.NonFilter)
+        db.prepare_filter(f_none)
+        assert db.filter is None
+
+        from vectordb_bench.backend.filter import IntFilter, LabelFilter
+
+        f_num = IntFilter(int_value=42)
+        db.prepare_filter(f_num)
+        assert db.filter == {"id": {"$gte": 42}}
+
+        f_str = LabelFilter(label_percentage=0.05)
+        db.prepare_filter(f_str)
+        assert db.filter == {"label": "label_5p"}
+
+
+def test_thread_safe_attribute():
+    """Defense against future maintainers flipping thread_safe to False —
+    the implementation deliberately shares one boto3 client across threads
+    and relies on this attribute being True."""
+    from vectordb_bench.backend.clients.s3_vectors.s3_vectors import S3Vectors
+
+    assert S3Vectors.thread_safe is True
