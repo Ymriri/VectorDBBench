@@ -101,3 +101,40 @@ def test_insert_chunks_to_batch_size():
         assert fake_client.put_vectors.call_count == 3
         sizes = [len(call.kwargs["vectors"]) for call in fake_client.put_vectors.call_args_list]
         assert sizes == [100, 100, 50]
+
+
+def test_insert_returns_partial_count_on_error():
+    """Second put_vectors raises ClientError → insert_embeddings returns
+    (count_from_first_batch, exception). Validates the contract that
+    ConcurrentInsertRunner relies on for partial-success accounting."""
+    from botocore.exceptions import ClientError
+
+    from vectordb_bench.backend.clients.s3_vectors import s3_vectors as mod
+
+    db_config, case_config = _default_db_and_case()
+
+    err = ClientError(
+        error_response={"Error": {"Code": "ThrottlingException", "Message": "throttled"}},
+        operation_name="PutVectors",
+    )
+
+    with patch.object(mod, "boto3") as mock_boto3:
+        fake_client = MagicMock()
+        # First call OK (returns mock); second call raises.
+        fake_client.put_vectors.side_effect = [MagicMock(), err]
+        mock_boto3.client.return_value = fake_client
+
+        db = mod.S3Vectors(
+            dim=4,
+            db_config=db_config,
+            db_case_config=case_config,
+            drop_old=False,
+        )
+        with db.init():
+            count, returned_err = db.insert_embeddings(
+                embeddings=[[0.1, 0.2, 0.3, 0.4]] * 250,
+                metadata=list(range(250)),
+            )
+
+        assert count == 100, "First batch (100 records) should have committed"
+        assert returned_err is err, "The exact ClientError instance should be returned"
