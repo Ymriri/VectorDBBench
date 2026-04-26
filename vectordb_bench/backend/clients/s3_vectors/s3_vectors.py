@@ -127,7 +127,7 @@ class S3Vectors(VectorDB):
 
     def insert_embeddings(
         self,
-        embeddings: Iterable[list[float]],
+        embeddings: list[list[float]],
         metadata: list[int],
         labels_data: list[str] | None = None,
         **kwargs,
