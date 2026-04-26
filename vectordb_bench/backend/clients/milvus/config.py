@@ -492,6 +492,38 @@ class SVSVamanaLeanVecConfig(SVSVamanaConfig):
         }
 
 
+class SPANNConfig(MilvusIndexConfig, DBCaseConfig):
+    index: IndexType = IndexType.SPANN
+
+    def index_param(self) -> dict:
+        return {
+            "metric_type": self.parse_metric(),
+            "index_type": self.index.value,
+            "params": {},
+        }
+
+    def search_param(self) -> dict:
+        return {
+            "metric_type": self.parse_metric(),
+        }
+
+
+class SPANNRABITQConfig(MilvusIndexConfig, DBCaseConfig):
+    index: IndexType = IndexType.SPANN_RABITQ
+
+    def index_param(self) -> dict:
+        return {
+            "metric_type": self.parse_metric(),
+            "index_type": self.index.value,
+            "params": {},
+        }
+
+    def search_param(self) -> dict:
+        return {
+            "metric_type": self.parse_metric(),
+        }
+
+
 _milvus_case_config = {
     IndexType.AUTOINDEX: AutoIndexConfig,
     IndexType.HNSW: HNSWConfig,
@@ -512,4 +544,6 @@ _milvus_case_config = {
     IndexType.SVS_VAMANA: SVSVamanaConfig,
     IndexType.SVS_VAMANA_LVQ: SVSVamanaLVQConfig,
     IndexType.SVS_VAMANA_LEANVEC: SVSVamanaLeanVecConfig,
+    IndexType.SPANN: SPANNConfig,
+    IndexType.SPANN_RABITQ: SPANNRABITQConfig,
 }

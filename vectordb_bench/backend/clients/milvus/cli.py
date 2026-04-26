@@ -728,3 +728,49 @@ def MilvusGPUCAGRA(**parameters: Unpack[MilvusGPUCAGRATypedDict]):
         ),
         **parameters,
     )
+
+
+class MilvusSPANNTypedDict(CommonTypedDict, MilvusTypedDict): ...
+
+
+@cli.command()
+@click_parameter_decorators_from_typed_dict(MilvusSPANNTypedDict)
+def MilvusSPANN(**parameters: Unpack[MilvusSPANNTypedDict]):
+    from .config import MilvusConfig, SPANNConfig
+
+    run(
+        db=DBTYPE,
+        db_config=MilvusConfig(
+            db_label=parameters["db_label"],
+            uri=SecretStr(parameters["uri"]),
+            user=parameters["user_name"],
+            password=SecretStr(parameters["password"]) if parameters["password"] else None,
+            num_shards=int(parameters["num_shards"]),
+            replica_number=int(parameters["replica_number"]),
+        ),
+        db_case_config=SPANNConfig(),
+        **parameters,
+    )
+
+
+class MilvusSPANNRaBitQTypedDict(CommonTypedDict, MilvusTypedDict): ...
+
+
+@cli.command()
+@click_parameter_decorators_from_typed_dict(MilvusSPANNRaBitQTypedDict)
+def MilvusSPANNRaBitQ(**parameters: Unpack[MilvusSPANNRaBitQTypedDict]):
+    from .config import MilvusConfig, SPANNRABITQConfig
+
+    run(
+        db=DBTYPE,
+        db_config=MilvusConfig(
+            db_label=parameters["db_label"],
+            uri=SecretStr(parameters["uri"]),
+            user=parameters["user_name"],
+            password=SecretStr(parameters["password"]) if parameters["password"] else None,
+            num_shards=int(parameters["num_shards"]),
+            replica_number=int(parameters["replica_number"]),
+        ),
+        db_case_config=SPANNRABITQConfig(),
+        **parameters,
+    )

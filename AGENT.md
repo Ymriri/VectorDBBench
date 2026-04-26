@@ -168,6 +168,28 @@ User Input (GUI/CLI)
                     -> flush()                # Save JSON to results/
 ```
 
+## Development Environment
+
+This project uses `uv` for Python environment management. A `.venv` directory exists in the project root.
+
+### Using the uv virtual environment
+
+```bash
+# Activate the venv
+source .venv/bin/activate
+
+# Or run commands directly via the venv Python
+.venv/bin/python -m pytest tests/ -v
+
+# Install dependencies with uv
+uv pip install -e ".[test]"
+
+# Install additional packages
+uv pip install --python .venv/bin/python <package>
+```
+
+**Note:** The project requires Python 3.11+. The system `python` may be 3.10, so always use `.venv/bin/python` for running tests.
+
 ## Configuration
 
 Environment variables (defined in `__init__.py`):

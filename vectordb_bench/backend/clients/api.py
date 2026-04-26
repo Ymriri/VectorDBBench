@@ -30,6 +30,8 @@ class IndexType(StrEnum):
     IVFBQ = "IVF_BQ"
     IVFSQ8 = "IVF_SQ8"
     IVF_RABITQ = "IVF_RABITQ"
+    SPANN = "SPANN"
+    SPANN_RABITQ = "SPANN_RABITQ"
     Flat = "FLAT"
     AUTOINDEX = "AUTOINDEX"
     ES_HNSW = "hnsw"
